@@ -1,0 +1,142 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "id": "bef92c69-adff-4a43-88ef-da397ec15a11",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import json\n",
+    "import operator"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "id": "a5c34e3f-5f51-4a6a-abe0-b1e57a8c3e9f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def is_json(filmjson):\n",
+    "    try:\n",
+    "        json_object = json.loads(filmjson)\n",
+    "    except:\n",
+    "        return False\n",
+    "    return True\n",
+    "\n",
+    "def encode_json_column(pandas_data_frame, json_column_index=0, json_id_column=\"id\", encodinglimit = 1000, remove_non_encoded = 1):\n",
+    "      \n",
+    "    X = pandas_data_frame.iloc[:, :].values\n",
+    "    \n",
+    "    #create a list of codes you want to take, based on encodinglimit\n",
+    "    all_encodedcolumns = {}\n",
+    "    \n",
+    "    for row in X:                    \n",
+    "        if(is_json(row[json_column_index])): #some data is just not json. ignore            \n",
+    "            #for each feature in the json\n",
+    "            for json_features in json.loads(row[json_column_index]):\n",
+    "                #pick out its id (the json identifier you specifc in json_id_column)\n",
+    "                featureid = json_features[json_id_column]                \n",
+    "                #if this id hasn't been seen yet, add it to the dataframe with default 0\n",
+    "                if featureid not in all_encodedcolumns:\n",
+    "                    all_encodedcolumns[featureid] = 1                   \n",
+    "                #else just set it to 1 here\n",
+    "                all_encodedcolumns[featureid] += 1\n",
+    "\n",
+    "\n",
+    "    top_encodedcolumns = sorted(all_encodedcolumns.items(), key=operator.itemgetter(1), reverse=True)\n",
+    "    \n",
+    "    if encodinglimit < len(top_encodedcolumns):\n",
+    "        top_encodedcolumns = top_encodedcolumns[:encodinglimit]        \n",
+    "\n",
+    "    top_encodedcolumns = dict(top_encodedcolumns)\n",
+    "    \n",
+    "    #keep track of whether a column has been encoded into the dataframe already, else we'd reset all the values to 0\n",
+    "    df_encodedcolumns = []\n",
+    "    count = 0\n",
+    "    \n",
+    "    #for each row in the data\n",
+    "    for row in X:\n",
+    "        \n",
+    "        #keep track of whether this row can be kept or not, based on if it has an encoded value\n",
+    "        has_an_encoded_value = 0\n",
+    "        \n",
+    "        if(is_json(row[json_column_index])): #some data is just not json. ignore\n",
+    "            \n",
+    "            #for each feature in the json\n",
+    "            for json_features in json.loads(row[json_column_index]):\n",
+    "                \n",
+    "                #pick out its id (the json identifier you specifc in json_id_column)\n",
+    "                featureid = json_features[json_id_column]\n",
+    "                                \n",
+    "                if featureid in top_encodedcolumns:\n",
+    "\n",
+    "                    #if this id hasn't been seen yet, add it to the dataframe with default 0\n",
+    "                    if featureid not in df_encodedcolumns:\n",
+    "                        df_encodedcolumns.append(featureid)\n",
+    "                        pandas_data_frame[featureid]=0\n",
+    "\n",
+    "                    pandas_data_frame.loc[count,featureid] = 1\n",
+    "                    \n",
+    "                    has_an_encoded_value = 1\n",
+    "    \n",
+    "        if has_an_encoded_value == 0 & remove_non_encoded == 1:\n",
+    "            pandas_data_frame.drop(pandas_data_frame.index[count])\n",
+    "        else:\n",
+    "          count+=1\n",
+    "\n",
+    "    #drop the original json column\n",
+    "    pandas_data_frame = pandas_data_frame.drop(pandas_data_frame.columns[json_column_index], 1)\n",
+    "    \n",
+    "    return pandas_data_frame"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bda1ad68-4674-41e8-99f0-5229c0305b58",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7baf45f5-71d1-4b9a-b8a2-dc63a6f057dd",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6dfebf6f-8d06-499c-a11f-5bf6b44bd03a",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.8"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
